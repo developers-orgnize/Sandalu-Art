@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import LoadingScreen from '@/components/LoadingScreen';
-import Navigation from '@/components/Navigation';
-import Hero from '@/components/Hero';
+import GalleryScene from '@/components/gallery3d/GalleryScene';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -15,14 +14,7 @@ const Index = () => {
         )}
       </AnimatePresence>
 
-      {!isLoading && (
-        <>
-          <Navigation />
-          <main className="bg-background min-h-screen">
-            <Hero />
-          </main>
-        </>
-      )}
+      {!isLoading && <GalleryScene />}
     </>
   );
 };
