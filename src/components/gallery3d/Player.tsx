@@ -1,35 +1,80 @@
 import { useRef, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import Character from './Character';
 
-const Player = () => {
-  const { camera } = useThree();
-  const velocity = useRef(new THREE.Vector3());
-  const direction = useRef(new THREE.Vector3());
-  const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3(0, 0, 8));
-  
-  const [, getKeys] = useKeyboardControls();
-  
-  // Player state
-  const playerRef = useRef({
-    position: new THREE.Vector3(0, 0, 8),
-    rotation: 0,
-  });
+// Floor circle positions - path through the gallery
+const FLOOR_POSITIONS = [
+  new THREE.Vector3(0, 0, 20),    // Start position
+  new THREE.Vector3(0, 0, 12),    // Position 1
+  new THREE.Vector3(-6, 0, 5),    // Left side
+  new THREE.Vector3(6, 0, 5),     // Right side
+  new THREE.Vector3(0, 0, 0),     // Center
+  new THREE.Vector3(-6, 0, -5),   // Left forward
+  new THREE.Vector3(6, 0, -5),    // Right forward
+  new THREE.Vector3(0, 0, -10),   // Near back
+  new THREE.Vector3(-6, 0, -15),  // Left back
+  new THREE.Vector3(6, 0, -15),   // Right back
+  new THREE.Vector3(0, 0, -18),   // Back center (info panel view)
+];
 
+interface PlayerProps {
+  currentPositionIndex?: number;
+  onPositionChange?: (index: number) => void;
+}
+
+const Player = ({ currentPositionIndex = 0, onPositionChange }: PlayerProps) => {
+  const { camera } = useThree();
+  const [targetIndex, setTargetIndex] = useState(currentPositionIndex);
+  const [playerPosition, setPlayerPosition] = useState(FLOOR_POSITIONS[currentPositionIndex].clone());
+  const currentPosition = useRef(FLOOR_POSITIONS[currentPositionIndex].clone());
+  const isTransitioning = useRef(false);
+  
   // Mouse look state
   const mouseState = useRef({
     isLocked: false,
-    rotationY: Math.PI, // Start facing the info panel
+    rotationY: Math.PI, // Start facing forward into gallery
     rotationX: 0.1,
   });
 
   // Third person camera offset
-  const cameraOffset = useRef(new THREE.Vector3(0, 3, 6));
+  const cameraOffset = new THREE.Vector3(0, 3, 6);
 
+  // Handle scroll to move between positions
   useEffect(() => {
-    // Handle pointer lock
+    let scrollTimeout: NodeJS.Timeout;
+    
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      
+      if (isTransitioning.current) return;
+      
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const direction = event.deltaY > 0 ? 1 : -1; // Scroll down = forward, scroll up = backward
+        
+        setTargetIndex(prev => {
+          const newIndex = Math.max(0, Math.min(FLOOR_POSITIONS.length - 1, prev + direction));
+          if (newIndex !== prev) {
+            isTransitioning.current = true;
+            onPositionChange?.(newIndex);
+          }
+          return newIndex;
+        });
+      }, 50);
+    };
+
+    const canvas = document.querySelector('canvas');
+    canvas?.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      canvas?.removeEventListener('wheel', handleWheel);
+      clearTimeout(scrollTimeout);
+    };
+  }, [onPositionChange]);
+
+  // Handle pointer lock for mouse look
+  useEffect(() => {
     const canvas = document.querySelector('canvas');
     
     const handleClick = () => {
@@ -67,65 +112,42 @@ const Player = () => {
     };
   }, []);
 
-  useFrame((_, delta) => {
-    const { forward, backward, left, right } = getKeys();
+  useFrame(() => {
+    const targetPosition = FLOOR_POSITIONS[targetIndex];
     
-    const speed = 8;
-    const friction = 0.85;
+    // Smooth interpolation to target position
+    const lerpFactor = 0.03; // Slow, smooth movement
+    currentPosition.current.lerp(targetPosition, lerpFactor);
     
-    // Calculate movement direction
-    direction.current.set(0, 0, 0);
-    
-    if (forward) direction.current.z -= 1;
-    if (backward) direction.current.z += 1;
-    if (left) direction.current.x -= 1;
-    if (right) direction.current.x += 1;
-    
-    direction.current.normalize();
-    
-    // Apply rotation to movement direction
-    const rotatedDirection = direction.current.clone();
-    rotatedDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), mouseState.current.rotationY);
-    
-    // Update velocity
-    velocity.current.x += rotatedDirection.x * speed * delta;
-    velocity.current.z += rotatedDirection.z * speed * delta;
-    
-    // Apply friction
-    velocity.current.x *= friction;
-    velocity.current.z *= friction;
-    
-    // Update position
-    playerRef.current.position.x += velocity.current.x;
-    playerRef.current.position.z += velocity.current.z;
-    
-    // Boundary constraints
-    const bounds = { minX: -13, maxX: 13, minZ: -23, maxZ: 23 };
-    playerRef.current.position.x = Math.max(bounds.minX, Math.min(bounds.maxX, playerRef.current.position.x));
-    playerRef.current.position.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, playerRef.current.position.z));
+    // Check if we've arrived at the target
+    const distance = currentPosition.current.distanceTo(targetPosition);
+    if (distance < 0.05) {
+      currentPosition.current.copy(targetPosition);
+      isTransitioning.current = false;
+    }
     
     // Update character position state
-    setPlayerPosition(playerRef.current.position.clone());
+    setPlayerPosition(currentPosition.current.clone());
     
     // Third person camera positioning
     const targetCameraPosition = new THREE.Vector3();
-    const offset = cameraOffset.current.clone();
+    const offset = cameraOffset.clone();
     
     // Rotate offset based on mouse rotation
     offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), mouseState.current.rotationY);
     
-    targetCameraPosition.copy(playerRef.current.position);
+    targetCameraPosition.copy(currentPosition.current);
     targetCameraPosition.y = 2;
     targetCameraPosition.add(offset);
     
     // Smooth camera follow
-    camera.position.lerp(targetCameraPosition, 0.1);
+    camera.position.lerp(targetCameraPosition, 0.08);
     
     // Camera look at player
     const lookAtPosition = new THREE.Vector3(
-      playerRef.current.position.x,
+      currentPosition.current.x,
       1.5,
-      playerRef.current.position.z
+      currentPosition.current.z
     );
     camera.lookAt(lookAtPosition);
     
@@ -137,3 +159,4 @@ const Player = () => {
 };
 
 export default Player;
+export { FLOOR_POSITIONS };
