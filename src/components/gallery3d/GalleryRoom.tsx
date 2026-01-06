@@ -2,6 +2,20 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import ArtworkFrame from './ArtworkFrame';
 
+// Floor circle positions - path through the gallery
+const FLOOR_POSITIONS = [
+  new THREE.Vector3(0, 0, 18),    // Start position
+  new THREE.Vector3(-6, 0, 10),   // Left front
+  new THREE.Vector3(6, 0, 10),    // Right front
+  new THREE.Vector3(0, 0, 5),     // Center
+  new THREE.Vector3(-6, 0, 0),    // Left middle
+  new THREE.Vector3(6, 0, 0),     // Right middle
+  new THREE.Vector3(0, 0, -5),    // Center back
+  new THREE.Vector3(-6, 0, -12),  // Left back
+  new THREE.Vector3(6, 0, -12),   // Right back
+  new THREE.Vector3(0, 0, -18),   // Back center (info panel view)
+];
+
 const GalleryRoom = () => {
   const floorRef = useRef<THREE.Mesh>(null);
 
@@ -103,6 +117,13 @@ const GalleryRoom = () => {
         </group>
       ))}
 
+      {/* Floor markers (circles) - positioned at key viewing spots */}
+      {FLOOR_POSITIONS.map((pos, idx) => (
+        <mesh key={`floor-${idx}`} rotation={[-Math.PI / 2, 0, 0]} position={[pos.x, 0.01, pos.z]}>
+          <ringGeometry args={[0.8, 1, 48]} />
+          <meshStandardMaterial color="#2a2a2a" roughness={0.9} transparent opacity={0.4} />
+        </mesh>
+      ))}
 
       {/* Artworks */}
       {artworks.map((artwork, idx) => (
