@@ -64,13 +64,14 @@ const GalleryUI = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
-        {/* Scroll to move */}
+        {/* Arrow keys to move */}
         <div className="flex items-center gap-2">
           <span className="font-serif text-xs text-muted-foreground tracking-wide">Move</span>
           <div className="flex items-center gap-1">
-            <div className="px-3 py-1.5 border border-foreground/30 text-xs text-foreground">
-              Scroll ↑↓
-            </div>
+            <div className="px-2 py-1 border border-foreground/30 text-xs text-foreground">↑</div>
+            <div className="px-2 py-1 border border-foreground/30 text-xs text-foreground">↓</div>
+            <div className="px-2 py-1 border border-foreground/30 text-xs text-foreground">←</div>
+            <div className="px-2 py-1 border border-foreground/30 text-xs text-foreground">→</div>
           </div>
         </div>
 
@@ -100,8 +101,8 @@ const GalleryUI = () => {
         style={{ pointerEvents: 'none' }}
       >
         <div className="text-center">
-          <p className="font-display text-2xl text-foreground mb-4">Scroll to explore the gallery</p>
-          <p className="font-serif text-sm text-muted-foreground tracking-ultra-wide lowercase">scroll to move • click + mouse to look around</p>
+          <p className="font-display text-2xl text-foreground mb-4">Use arrow keys to explore</p>
+          <p className="font-serif text-sm text-muted-foreground tracking-ultra-wide lowercase">↑ ↓ ← → or WASD to move • click + mouse to look around</p>
         </div>
       </motion.div>
     </>

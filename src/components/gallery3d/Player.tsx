@@ -3,32 +3,19 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import Character from './Character';
 
-// Floor circle positions - path through the gallery
-const FLOOR_POSITIONS = [
-  new THREE.Vector3(0, 0, 20),    // Start position
-  new THREE.Vector3(0, 0, 12),    // Position 1
-  new THREE.Vector3(-6, 0, 5),    // Left side
-  new THREE.Vector3(6, 0, 5),     // Right side
-  new THREE.Vector3(0, 0, 0),     // Center
-  new THREE.Vector3(-6, 0, -5),   // Left forward
-  new THREE.Vector3(6, 0, -5),    // Right forward
-  new THREE.Vector3(0, 0, -10),   // Near back
-  new THREE.Vector3(-6, 0, -15),  // Left back
-  new THREE.Vector3(6, 0, -15),   // Right back
-  new THREE.Vector3(0, 0, -18),   // Back center (info panel view)
-];
-
-interface PlayerProps {
-  currentPositionIndex?: number;
-  onPositionChange?: (index: number) => void;
-}
-
-const Player = ({ currentPositionIndex = 0, onPositionChange }: PlayerProps) => {
+const Player = () => {
   const { camera } = useThree();
-  const [targetIndex, setTargetIndex] = useState(currentPositionIndex);
-  const [playerPosition, setPlayerPosition] = useState(FLOOR_POSITIONS[currentPositionIndex].clone());
-  const currentPosition = useRef(FLOOR_POSITIONS[currentPositionIndex].clone());
-  const isTransitioning = useRef(false);
+  const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3(0, 0, 20));
+  const currentPosition = useRef(new THREE.Vector3(0, 0, 20));
+  const velocity = useRef(new THREE.Vector3(0, 0, 0));
+  
+  // Movement keys state
+  const keys = useRef({
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+  });
   
   // Mouse look state
   const mouseState = useRef({
@@ -39,60 +26,71 @@ const Player = ({ currentPositionIndex = 0, onPositionChange }: PlayerProps) => 
 
   // Third person camera offset
   const cameraOffset = new THREE.Vector3(0, 3, 6);
+  
+  // Movement settings
+  const moveSpeed = 0.08;
+  const friction = 0.92;
 
-  // Handle keyboard and scroll to move between positions
+  // Handle keyboard input
   useEffect(() => {
-    let scrollTimeout: NodeJS.Timeout;
-    
-    const movePlayer = (direction: number) => {
-      if (isTransitioning.current) return;
-      
-      setTargetIndex(prev => {
-        const newIndex = Math.max(0, Math.min(FLOOR_POSITIONS.length - 1, prev + direction));
-        if (newIndex !== prev) {
-          isTransitioning.current = true;
-          onPositionChange?.(newIndex);
-        }
-        return newIndex;
-      });
-    };
-    
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        const direction = event.deltaY > 0 ? 1 : -1;
-        movePlayer(direction);
-      }, 50);
-    };
-
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.key) {
         case 'ArrowUp':
         case 'w':
         case 'W':
-          event.preventDefault();
-          movePlayer(1); // Forward
+          keys.current.forward = true;
           break;
         case 'ArrowDown':
         case 's':
         case 'S':
-          event.preventDefault();
-          movePlayer(-1); // Backward
+          keys.current.backward = true;
+          break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          keys.current.left = true;
+          break;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          keys.current.right = true;
           break;
       }
     };
 
-    const canvas = document.querySelector('canvas');
-    canvas?.addEventListener('wheel', handleWheel, { passive: false });
+    const handleKeyUp = (event: KeyboardEvent) => {
+      switch (event.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          keys.current.forward = false;
+          break;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          keys.current.backward = false;
+          break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          keys.current.left = false;
+          break;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          keys.current.right = false;
+          break;
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 
     return () => {
-      canvas?.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleKeyDown);
-      clearTimeout(scrollTimeout);
+      window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [onPositionChange]);
+  }, []);
 
   // Handle pointer lock for mouse look
   useEffect(() => {
@@ -134,18 +132,47 @@ const Player = ({ currentPositionIndex = 0, onPositionChange }: PlayerProps) => 
   }, []);
 
   useFrame(() => {
-    const targetPosition = FLOOR_POSITIONS[targetIndex];
+    // Calculate movement direction based on camera orientation
+    const direction = new THREE.Vector3();
     
-    // Smooth interpolation to target position
-    const lerpFactor = 0.03; // Slow, smooth movement
-    currentPosition.current.lerp(targetPosition, lerpFactor);
+    // Get forward/backward direction (based on camera Y rotation)
+    const forward = new THREE.Vector3(
+      Math.sin(mouseState.current.rotationY),
+      0,
+      Math.cos(mouseState.current.rotationY)
+    );
     
-    // Check if we've arrived at the target
-    const distance = currentPosition.current.distanceTo(targetPosition);
-    if (distance < 0.05) {
-      currentPosition.current.copy(targetPosition);
-      isTransitioning.current = false;
+    // Get left/right direction (perpendicular to forward)
+    const right = new THREE.Vector3(
+      Math.sin(mouseState.current.rotationY + Math.PI / 2),
+      0,
+      Math.cos(mouseState.current.rotationY + Math.PI / 2)
+    );
+    
+    // Apply movement based on keys
+    if (keys.current.forward) direction.add(forward);
+    if (keys.current.backward) direction.sub(forward);
+    if (keys.current.left) direction.add(right);
+    if (keys.current.right) direction.sub(right);
+    
+    // Normalize and apply speed
+    if (direction.length() > 0) {
+      direction.normalize().multiplyScalar(moveSpeed);
     }
+    
+    // Add to velocity
+    velocity.current.add(direction);
+    
+    // Apply friction
+    velocity.current.multiplyScalar(friction);
+    
+    // Update position
+    currentPosition.current.add(velocity.current);
+    
+    // Boundary constraints (keep player inside gallery)
+    currentPosition.current.x = Math.max(-8, Math.min(8, currentPosition.current.x));
+    currentPosition.current.z = Math.max(-20, Math.min(22, currentPosition.current.z));
+    currentPosition.current.y = 0; // Keep on ground
     
     // Update character position state
     setPlayerPosition(currentPosition.current.clone());
@@ -180,4 +207,3 @@ const Player = ({ currentPositionIndex = 0, onPositionChange }: PlayerProps) => 
 };
 
 export default Player;
-export { FLOOR_POSITIONS };
