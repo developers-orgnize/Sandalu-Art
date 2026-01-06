@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import * as THREE from 'three';
 import ArtworkFrame from './ArtworkFrame';
-import { FLOOR_POSITIONS } from './Player';
 
 const GalleryRoom = () => {
   const floorRef = useRef<THREE.Mesh>(null);
@@ -104,13 +103,6 @@ const GalleryRoom = () => {
         </group>
       ))}
 
-      {/* Floor markers (circles) - positioned at each stop point */}
-      {FLOOR_POSITIONS.map((pos, idx) => (
-        <mesh key={idx} rotation={[-Math.PI / 2, 0, 0]} position={[pos.x, 0.01, pos.z]}>
-          <ringGeometry args={[1.2, 1.5, 48]} />
-          <meshStandardMaterial color="#c0c0c0" roughness={0.9} transparent opacity={0.6} />
-        </mesh>
-      ))}
 
       {/* Artworks */}
       {artworks.map((artwork, idx) => (
