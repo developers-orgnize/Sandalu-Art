@@ -40,35 +40,56 @@ const Player = ({ currentPositionIndex = 0, onPositionChange }: PlayerProps) => 
   // Third person camera offset
   const cameraOffset = new THREE.Vector3(0, 3, 6);
 
-  // Handle scroll to move between positions
+  // Handle keyboard and scroll to move between positions
   useEffect(() => {
     let scrollTimeout: NodeJS.Timeout;
     
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      
+    const movePlayer = (direction: number) => {
       if (isTransitioning.current) return;
       
+      setTargetIndex(prev => {
+        const newIndex = Math.max(0, Math.min(FLOOR_POSITIONS.length - 1, prev + direction));
+        if (newIndex !== prev) {
+          isTransitioning.current = true;
+          onPositionChange?.(newIndex);
+        }
+        return newIndex;
+      });
+    };
+    
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
-        const direction = event.deltaY > 0 ? 1 : -1; // Scroll down = forward, scroll up = backward
-        
-        setTargetIndex(prev => {
-          const newIndex = Math.max(0, Math.min(FLOOR_POSITIONS.length - 1, prev + direction));
-          if (newIndex !== prev) {
-            isTransitioning.current = true;
-            onPositionChange?.(newIndex);
-          }
-          return newIndex;
-        });
+        const direction = event.deltaY > 0 ? 1 : -1;
+        movePlayer(direction);
       }, 50);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      switch (event.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          event.preventDefault();
+          movePlayer(1); // Forward
+          break;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          event.preventDefault();
+          movePlayer(-1); // Backward
+          break;
+      }
     };
 
     const canvas = document.querySelector('canvas');
     canvas?.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       canvas?.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleKeyDown);
       clearTimeout(scrollTimeout);
     };
   }, [onPositionChange]);
