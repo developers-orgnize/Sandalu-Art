@@ -153,8 +153,8 @@ const Player = () => {
     // Apply movement based on keys
     if (keys.current.forward) direction.add(forward);
     if (keys.current.backward) direction.sub(forward);
-    if (keys.current.left) direction.add(right);
-    if (keys.current.right) direction.sub(right);
+    if (keys.current.left) direction.sub(right);
+    if (keys.current.right) direction.add(right);
     
     // Normalize and apply speed
     if (direction.length() > 0) {
