@@ -2,35 +2,42 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import ArtworkFrame from './ArtworkFrame';
 
-// Floor circle positions - path through the gallery
+// Floor circle positions - directly in front of each artwork
 const FLOOR_POSITIONS = [
-  new THREE.Vector3(0, 0, 18),    // Start position
-  new THREE.Vector3(-6, 0, 10),   // Left front
-  new THREE.Vector3(6, 0, 10),    // Right front
-  new THREE.Vector3(0, 0, 5),     // Center
-  new THREE.Vector3(-6, 0, 0),    // Left middle
-  new THREE.Vector3(6, 0, 0),     // Right middle
-  new THREE.Vector3(0, 0, -5),    // Center back
-  new THREE.Vector3(-6, 0, -12),  // Left back
-  new THREE.Vector3(6, 0, -12),   // Right back
-  new THREE.Vector3(0, 0, -18),   // Back center (info panel view)
+  new THREE.Vector3(0, 0, 20),     // Start position (entrance)
+  // Left wall artworks (x=-14.9) - circles at x=-11 (3 units from wall)
+  new THREE.Vector3(-11, 0, 15),   // In front of 'composition' 
+  new THREE.Vector3(-11, 0, 5),    // In front of 'nature morte'
+  new THREE.Vector3(-11, 0, -5),   // In front of 'portrait'
+  new THREE.Vector3(-11, 0, -15),  // In front of 'étude I'
+  // Right wall artworks (x=14.9) - circles at x=11 (3 units from wall)
+  new THREE.Vector3(11, 0, 15),    // In front of 'rêverie'
+  new THREE.Vector3(11, 0, 5),     // In front of 'mélancolie'
+  new THREE.Vector3(11, 0, -5),    // In front of 'abstraction'
+  new THREE.Vector3(11, 0, -15),   // In front of 'étude II'
+  // Back wall artwork (z=-24.9) - circle at z=-21 (3 units from wall)
+  new THREE.Vector3(0, 0, -21),    // In front of info panel
 ];
 
 // Path segments connecting floor circles
 const PATH_SEGMENTS = [
-  { from: 0, to: 3 },   // Start to center
-  { from: 3, to: 1 },   // Center to left front
-  { from: 3, to: 2 },   // Center to right front
-  { from: 3, to: 6 },   // Center to center back
-  { from: 1, to: 4 },   // Left front to left middle
-  { from: 2, to: 5 },   // Right front to right middle
-  { from: 4, to: 6 },   // Left middle to center back
-  { from: 5, to: 6 },   // Right middle to center back
-  { from: 4, to: 7 },   // Left middle to left back
-  { from: 5, to: 8 },   // Right middle to right back
-  { from: 6, to: 9 },   // Center back to back center
-  { from: 7, to: 9 },   // Left back to back center
-  { from: 8, to: 9 },   // Right back to back center
+  // From entrance to front artworks
+  { from: 0, to: 1 },   // Start to left front
+  { from: 0, to: 5 },   // Start to right front
+  // Left wall connections
+  { from: 1, to: 2 },   // Left: composition to nature morte
+  { from: 2, to: 3 },   // Left: nature morte to portrait
+  { from: 3, to: 4 },   // Left: portrait to étude I
+  // Right wall connections
+  { from: 5, to: 6 },   // Right: rêverie to mélancolie
+  { from: 6, to: 7 },   // Right: mélancolie to abstraction
+  { from: 7, to: 8 },   // Right: abstraction to étude II
+  // Cross connections to back
+  { from: 4, to: 9 },   // Left back to info panel
+  { from: 8, to: 9 },   // Right back to info panel
+  // Cross gallery connections
+  { from: 2, to: 6 },   // Middle cross
+  { from: 3, to: 7 },   // Middle cross
 ];
 
 const GalleryRoom = () => {

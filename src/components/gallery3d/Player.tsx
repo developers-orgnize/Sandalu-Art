@@ -3,18 +3,21 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import Character from './Character';
 
-// Floor circle positions - must match GalleryRoom
+// Floor circle positions - directly in front of each artwork (must match GalleryRoom)
 const FLOOR_POSITIONS = [
-  { pos: new THREE.Vector3(0, 0, 18), artworkPos: null },
-  { pos: new THREE.Vector3(-6, 0, 10), artworkPos: new THREE.Vector3(-14.9, 3, 15) },
-  { pos: new THREE.Vector3(6, 0, 10), artworkPos: new THREE.Vector3(14.9, 3, 15) },
-  { pos: new THREE.Vector3(0, 0, 5), artworkPos: null },
-  { pos: new THREE.Vector3(-6, 0, 0), artworkPos: new THREE.Vector3(-14.9, 3, 5) },
-  { pos: new THREE.Vector3(6, 0, 0), artworkPos: new THREE.Vector3(14.9, 3, 5) },
-  { pos: new THREE.Vector3(0, 0, -5), artworkPos: null },
-  { pos: new THREE.Vector3(-6, 0, -12), artworkPos: new THREE.Vector3(-14.9, 3, -15) },
-  { pos: new THREE.Vector3(6, 0, -12), artworkPos: new THREE.Vector3(14.9, 3, -15) },
-  { pos: new THREE.Vector3(0, 0, -18), artworkPos: new THREE.Vector3(0, 3.5, -24.9) },
+  { pos: new THREE.Vector3(0, 0, 20), artworkPos: null }, // Entrance
+  // Left wall artworks
+  { pos: new THREE.Vector3(-11, 0, 15), artworkPos: new THREE.Vector3(-14.9, 3, 15) },  // composition
+  { pos: new THREE.Vector3(-11, 0, 5), artworkPos: new THREE.Vector3(-14.9, 3, 5) },    // nature morte
+  { pos: new THREE.Vector3(-11, 0, -5), artworkPos: new THREE.Vector3(-14.9, 3, -5) },  // portrait
+  { pos: new THREE.Vector3(-11, 0, -15), artworkPos: new THREE.Vector3(-14.9, 3, -15) }, // étude I
+  // Right wall artworks
+  { pos: new THREE.Vector3(11, 0, 15), artworkPos: new THREE.Vector3(14.9, 3, 15) },   // rêverie
+  { pos: new THREE.Vector3(11, 0, 5), artworkPos: new THREE.Vector3(14.9, 3, 5) },     // mélancolie
+  { pos: new THREE.Vector3(11, 0, -5), artworkPos: new THREE.Vector3(14.9, 3, -5) },   // abstraction
+  { pos: new THREE.Vector3(11, 0, -15), artworkPos: new THREE.Vector3(14.9, 3, -15) }, // étude II
+  // Back wall
+  { pos: new THREE.Vector3(0, 0, -21), artworkPos: new THREE.Vector3(0, 3.5, -24.9) }, // info panel
 ];
 
 const Player = () => {
@@ -213,9 +216,9 @@ const Player = () => {
     // Update position
     currentPosition.current.add(velocity.current);
     
-    // Boundary constraints (keep player inside gallery)
-    currentPosition.current.x = Math.max(-8, Math.min(8, currentPosition.current.x));
-    currentPosition.current.z = Math.max(-20, Math.min(22, currentPosition.current.z));
+    // Boundary constraints (keep player inside gallery, allow reaching wall circles)
+    currentPosition.current.x = Math.max(-13, Math.min(13, currentPosition.current.x));
+    currentPosition.current.z = Math.max(-23, Math.min(22, currentPosition.current.z));
     currentPosition.current.y = 0; // Keep on ground
     
     // Update character position state
