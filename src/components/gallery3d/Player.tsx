@@ -20,7 +20,7 @@ const Player = () => {
   // Mouse look state
   const mouseState = useRef({
     isLocked: false,
-    rotationY: Math.PI, // Start facing forward into gallery
+    rotationY: 0, // Start facing into gallery (toward artworks)
     rotationX: 0.1,
   });
 
@@ -136,10 +136,11 @@ const Player = () => {
     const direction = new THREE.Vector3();
     
     // Get forward/backward direction (based on camera Y rotation)
+    // Negated so UP arrow moves toward negative Z (into gallery)
     const forward = new THREE.Vector3(
-      Math.sin(mouseState.current.rotationY),
+      -Math.sin(mouseState.current.rotationY),
       0,
-      Math.cos(mouseState.current.rotationY)
+      -Math.cos(mouseState.current.rotationY)
     );
     
     // Get left/right direction (perpendicular to forward)
