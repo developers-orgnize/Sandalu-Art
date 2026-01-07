@@ -28,8 +28,8 @@ const Player = () => {
   const cameraOffset = new THREE.Vector3(0, 3, 6);
   
   // Movement settings
-  const moveSpeed = 0.08;
-  const friction = 0.92;
+  const moveSpeed = 0.03;
+  const friction = 0.88;
 
   // Handle keyboard input
   useEffect(() => {
