@@ -3,11 +3,28 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import Character from './Character';
 
+// Floor circle positions - must match GalleryRoom
+const FLOOR_POSITIONS = [
+  { pos: new THREE.Vector3(0, 0, 18), artworkPos: null },
+  { pos: new THREE.Vector3(-6, 0, 10), artworkPos: new THREE.Vector3(-14.9, 3, 15) },
+  { pos: new THREE.Vector3(6, 0, 10), artworkPos: new THREE.Vector3(14.9, 3, 15) },
+  { pos: new THREE.Vector3(0, 0, 5), artworkPos: null },
+  { pos: new THREE.Vector3(-6, 0, 0), artworkPos: new THREE.Vector3(-14.9, 3, 5) },
+  { pos: new THREE.Vector3(6, 0, 0), artworkPos: new THREE.Vector3(14.9, 3, 5) },
+  { pos: new THREE.Vector3(0, 0, -5), artworkPos: null },
+  { pos: new THREE.Vector3(-6, 0, -12), artworkPos: new THREE.Vector3(-14.9, 3, -15) },
+  { pos: new THREE.Vector3(6, 0, -12), artworkPos: new THREE.Vector3(14.9, 3, -15) },
+  { pos: new THREE.Vector3(0, 0, -18), artworkPos: new THREE.Vector3(0, 3.5, -24.9) },
+];
+
 const Player = () => {
   const { camera } = useThree();
   const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3(0, 0, 20));
   const currentPosition = useRef(new THREE.Vector3(0, 0, 20));
   const velocity = useRef(new THREE.Vector3(0, 0, 0));
+  const isViewingArtwork = useRef(false);
+  const targetArtwork = useRef<THREE.Vector3 | null>(null);
+  const viewingTransition = useRef(0);
   
   // Movement keys state
   const keys = useRef({
@@ -30,6 +47,9 @@ const Player = () => {
   // Movement settings
   const moveSpeed = 0.03;
   const friction = 0.88;
+  
+  // Circle detection radius
+  const circleRadius = 1.2;
 
   // Handle keyboard input
   useEffect(() => {
@@ -132,6 +152,29 @@ const Player = () => {
   }, []);
 
   useFrame(() => {
+    // Check if player is on a circle
+    let onCircle = false;
+    let nearestArtwork: THREE.Vector3 | null = null;
+    
+    for (const floorPos of FLOOR_POSITIONS) {
+      const dist = currentPosition.current.distanceTo(floorPos.pos);
+      if (dist < circleRadius && floorPos.artworkPos) {
+        onCircle = true;
+        nearestArtwork = floorPos.artworkPos;
+        break;
+      }
+    }
+    
+    // Handle viewing transition
+    if (onCircle && nearestArtwork && !keys.current.forward && !keys.current.backward && !keys.current.left && !keys.current.right) {
+      isViewingArtwork.current = true;
+      targetArtwork.current = nearestArtwork;
+      viewingTransition.current = Math.min(1, viewingTransition.current + 0.02);
+    } else {
+      isViewingArtwork.current = false;
+      viewingTransition.current = Math.max(0, viewingTransition.current - 0.04);
+    }
+    
     // Calculate movement direction based on camera orientation
     const direction = new THREE.Vector3();
     
@@ -178,30 +221,77 @@ const Player = () => {
     // Update character position state
     setPlayerPosition(currentPosition.current.clone());
     
-    // Third person camera positioning
-    const targetCameraPosition = new THREE.Vector3();
-    const offset = cameraOffset.clone();
+    // Calculate camera positions
+    const t = viewingTransition.current;
     
-    // Rotate offset based on mouse rotation
-    offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), mouseState.current.rotationY);
-    
-    targetCameraPosition.copy(currentPosition.current);
-    targetCameraPosition.y = 2;
-    targetCameraPosition.add(offset);
-    
-    // Smooth camera follow
-    camera.position.lerp(targetCameraPosition, 0.08);
-    
-    // Camera look at player
-    const lookAtPosition = new THREE.Vector3(
-      currentPosition.current.x,
-      1.5,
-      currentPosition.current.z
-    );
-    camera.lookAt(lookAtPosition);
-    
-    // Apply vertical tilt
-    camera.rotation.x += mouseState.current.rotationX * 0.5;
+    if (t > 0 && targetArtwork.current) {
+      // Viewing artwork mode - camera zooms to artwork
+      const artworkPos = targetArtwork.current;
+      
+      // Calculate viewing position (in front of artwork)
+      const viewDistance = 4;
+      const viewOffset = new THREE.Vector3();
+      
+      // Determine which wall the artwork is on and position camera accordingly
+      if (Math.abs(artworkPos.x) > 10) {
+        // Left or right wall
+        viewOffset.x = artworkPos.x > 0 ? -viewDistance : viewDistance;
+        viewOffset.z = artworkPos.z;
+      } else {
+        // Back wall
+        viewOffset.x = artworkPos.x;
+        viewOffset.z = artworkPos.z + viewDistance;
+      }
+      
+      const viewCameraPos = new THREE.Vector3(
+        viewOffset.x,
+        artworkPos.y,
+        viewOffset.z
+      );
+      
+      // Third person camera position
+      const normalCameraPos = new THREE.Vector3();
+      const offset = cameraOffset.clone();
+      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), mouseState.current.rotationY);
+      normalCameraPos.copy(currentPosition.current);
+      normalCameraPos.y = 2;
+      normalCameraPos.add(offset);
+      
+      // Lerp between normal and viewing positions
+      const lerpedCameraPos = normalCameraPos.clone().lerp(viewCameraPos, t);
+      camera.position.lerp(lerpedCameraPos, 0.08);
+      
+      // Look at artwork when viewing
+      const normalLookAt = new THREE.Vector3(currentPosition.current.x, 1.5, currentPosition.current.z);
+      const artworkLookAt = new THREE.Vector3(artworkPos.x, artworkPos.y, artworkPos.z);
+      const lerpedLookAt = normalLookAt.clone().lerp(artworkLookAt, t);
+      camera.lookAt(lerpedLookAt);
+    } else {
+      // Normal third person camera
+      const targetCameraPosition = new THREE.Vector3();
+      const offset = cameraOffset.clone();
+      
+      // Rotate offset based on mouse rotation
+      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), mouseState.current.rotationY);
+      
+      targetCameraPosition.copy(currentPosition.current);
+      targetCameraPosition.y = 2;
+      targetCameraPosition.add(offset);
+      
+      // Smooth camera follow
+      camera.position.lerp(targetCameraPosition, 0.08);
+      
+      // Camera look at player
+      const lookAtPosition = new THREE.Vector3(
+        currentPosition.current.x,
+        1.5,
+        currentPosition.current.z
+      );
+      camera.lookAt(lookAtPosition);
+      
+      // Apply vertical tilt
+      camera.rotation.x += mouseState.current.rotationX * 0.5;
+    }
   });
 
   return <Character position={playerPosition} />;
