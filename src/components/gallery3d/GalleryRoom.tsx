@@ -16,6 +16,23 @@ const FLOOR_POSITIONS = [
   new THREE.Vector3(0, 0, -18),   // Back center (info panel view)
 ];
 
+// Path segments connecting floor circles
+const PATH_SEGMENTS = [
+  { from: 0, to: 3 },   // Start to center
+  { from: 3, to: 1 },   // Center to left front
+  { from: 3, to: 2 },   // Center to right front
+  { from: 3, to: 6 },   // Center to center back
+  { from: 1, to: 4 },   // Left front to left middle
+  { from: 2, to: 5 },   // Right front to right middle
+  { from: 4, to: 6 },   // Left middle to center back
+  { from: 5, to: 6 },   // Right middle to center back
+  { from: 4, to: 7 },   // Left middle to left back
+  { from: 5, to: 8 },   // Right middle to right back
+  { from: 6, to: 9 },   // Center back to back center
+  { from: 7, to: 9 },   // Left back to back center
+  { from: 8, to: 9 },   // Right back to back center
+];
+
 const GalleryRoom = () => {
   const floorRef = useRef<THREE.Mesh>(null);
 
@@ -117,12 +134,40 @@ const GalleryRoom = () => {
         </group>
       ))}
 
+      {/* Footpath lines connecting circles */}
+      {PATH_SEGMENTS.map((segment, idx) => {
+        const from = FLOOR_POSITIONS[segment.from];
+        const to = FLOOR_POSITIONS[segment.to];
+        const midPoint = new THREE.Vector3(
+          (from.x + to.x) / 2,
+          0.005,
+          (from.z + to.z) / 2
+        );
+        const length = from.distanceTo(to);
+        const angle = Math.atan2(to.x - from.x, to.z - from.z);
+        
+        return (
+          <mesh key={`path-${idx}`} position={midPoint} rotation={[-Math.PI / 2, 0, -angle]}>
+            <planeGeometry args={[0.3, length]} />
+            <meshStandardMaterial color="#1a1a1a" roughness={0.9} transparent opacity={0.25} />
+          </mesh>
+        );
+      })}
+
       {/* Floor markers (circles) - positioned at key viewing spots */}
       {FLOOR_POSITIONS.map((pos, idx) => (
-        <mesh key={`floor-${idx}`} rotation={[-Math.PI / 2, 0, 0]} position={[pos.x, 0.01, pos.z]}>
-          <ringGeometry args={[0.8, 1, 48]} />
-          <meshStandardMaterial color="#2a2a2a" roughness={0.9} transparent opacity={0.4} />
-        </mesh>
+        <group key={`floor-${idx}`}>
+          {/* Outer ring */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[pos.x, 0.01, pos.z]}>
+            <ringGeometry args={[0.8, 1, 48]} />
+            <meshStandardMaterial color="#2a2a2a" roughness={0.9} transparent opacity={0.5} />
+          </mesh>
+          {/* Inner decorative circle */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[pos.x, 0.008, pos.z]}>
+            <circleGeometry args={[0.6, 32]} />
+            <meshStandardMaterial color="#1a1a1a" roughness={0.9} transparent opacity={0.15} />
+          </mesh>
+        </group>
       ))}
 
       {/* Artworks */}
