@@ -1,10 +1,30 @@
 import { Canvas } from '@react-three/fiber';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import GalleryRoom from './GalleryRoom';
-import Player from './Player';
+import Player, { setGlobalNavigate, handleEnterKey } from './Player';
 import GalleryUI from './GalleryUI';
 
 const GalleryScene = () => {
+  const navigate = useNavigate();
+
+  // Set up global navigate function for Player
+  useEffect(() => {
+    setGlobalNavigate(navigate);
+  }, [navigate]);
+
+  // Handle Enter key for artwork navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        handleEnterKey();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <div className="w-full h-screen bg-background relative">
       <Canvas

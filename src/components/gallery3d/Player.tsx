@@ -1,24 +1,45 @@
 import { useRef, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
+import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import Character from './Character';
 
-// Floor circle positions - directly in front of each artwork (must match GalleryRoom)
+// Floor circle positions with artwork IDs for navigation
 const FLOOR_POSITIONS = [
-  { pos: new THREE.Vector3(0, 0, 20), artworkPos: null }, // Entrance
+  { pos: new THREE.Vector3(0, 0, 20), artworkPos: null, artworkId: null }, // Entrance
   // Left wall artworks
-  { pos: new THREE.Vector3(-11, 0, 15), artworkPos: new THREE.Vector3(-14.9, 3, 15) },  // composition
-  { pos: new THREE.Vector3(-11, 0, 5), artworkPos: new THREE.Vector3(-14.9, 3, 5) },    // nature morte
-  { pos: new THREE.Vector3(-11, 0, -5), artworkPos: new THREE.Vector3(-14.9, 3, -5) },  // portrait
-  { pos: new THREE.Vector3(-11, 0, -15), artworkPos: new THREE.Vector3(-14.9, 3, -15) }, // étude I
+  { pos: new THREE.Vector3(-11, 0, 15), artworkPos: new THREE.Vector3(-14.9, 3, 15), artworkId: 'composition' },
+  { pos: new THREE.Vector3(-11, 0, 5), artworkPos: new THREE.Vector3(-14.9, 3, 5), artworkId: 'nature-morte' },
+  { pos: new THREE.Vector3(-11, 0, -5), artworkPos: new THREE.Vector3(-14.9, 3, -5), artworkId: 'portrait' },
+  { pos: new THREE.Vector3(-11, 0, -15), artworkPos: new THREE.Vector3(-14.9, 3, -15), artworkId: 'etude-i' },
   // Right wall artworks
-  { pos: new THREE.Vector3(11, 0, 15), artworkPos: new THREE.Vector3(14.9, 3, 15) },   // rêverie
-  { pos: new THREE.Vector3(11, 0, 5), artworkPos: new THREE.Vector3(14.9, 3, 5) },     // mélancolie
-  { pos: new THREE.Vector3(11, 0, -5), artworkPos: new THREE.Vector3(14.9, 3, -5) },   // abstraction
-  { pos: new THREE.Vector3(11, 0, -15), artworkPos: new THREE.Vector3(14.9, 3, -15) }, // étude II
+  { pos: new THREE.Vector3(11, 0, 15), artworkPos: new THREE.Vector3(14.9, 3, 15), artworkId: 'reverie' },
+  { pos: new THREE.Vector3(11, 0, 5), artworkPos: new THREE.Vector3(14.9, 3, 5), artworkId: 'melancolie' },
+  { pos: new THREE.Vector3(11, 0, -5), artworkPos: new THREE.Vector3(14.9, 3, -5), artworkId: 'abstraction' },
+  { pos: new THREE.Vector3(11, 0, -15), artworkPos: new THREE.Vector3(14.9, 3, -15), artworkId: 'etude-ii' },
   // Back wall
-  { pos: new THREE.Vector3(0, 0, -21), artworkPos: new THREE.Vector3(0, 3.5, -24.9) }, // info panel
+  { pos: new THREE.Vector3(0, 0, -21), artworkPos: new THREE.Vector3(0, 3.5, -24.9), artworkId: 'info' },
 ];
+
+// Create a hook to handle Enter key navigation
+export const useArtworkNavigation = () => {
+  const [currentArtworkId, setCurrentArtworkId] = useState<string | null>(null);
+  return { currentArtworkId, setCurrentArtworkId };
+};
+
+// Global state for current artwork (simple approach)
+let globalCurrentArtworkId: string | null = null;
+let globalNavigate: ((path: string) => void) | null = null;
+
+export const setGlobalNavigate = (navigate: (path: string) => void) => {
+  globalNavigate = navigate;
+};
+
+export const handleEnterKey = () => {
+  if (globalCurrentArtworkId && globalNavigate) {
+    globalNavigate(`/artwork/${globalCurrentArtworkId}`);
+  }
+};
 
 const Player = () => {
   const { camera } = useThree();
@@ -28,6 +49,7 @@ const Player = () => {
   const isViewingArtwork = useRef(false);
   const targetArtwork = useRef<THREE.Vector3 | null>(null);
   const viewingTransition = useRef(0);
+  const currentArtworkId = useRef<string | null>(null);
   
   // Movement keys state
   const keys = useRef({
@@ -40,7 +62,7 @@ const Player = () => {
   // Mouse look state
   const mouseState = useRef({
     isLocked: false,
-    rotationY: 0, // Start facing into gallery (toward artworks)
+    rotationY: 0,
     rotationX: 0.1,
   });
 
@@ -158,15 +180,21 @@ const Player = () => {
     // Check if player is on a circle
     let onCircle = false;
     let nearestArtwork: THREE.Vector3 | null = null;
+    let nearestArtworkId: string | null = null;
     
     for (const floorPos of FLOOR_POSITIONS) {
       const dist = currentPosition.current.distanceTo(floorPos.pos);
       if (dist < circleRadius && floorPos.artworkPos) {
         onCircle = true;
         nearestArtwork = floorPos.artworkPos;
+        nearestArtworkId = floorPos.artworkId;
         break;
       }
     }
+    
+    // Update global artwork ID for Enter key navigation
+    globalCurrentArtworkId = nearestArtworkId;
+    currentArtworkId.current = nearestArtworkId;
     
     // Handle viewing transition
     if (onCircle && nearestArtwork && !keys.current.forward && !keys.current.backward && !keys.current.left && !keys.current.right) {
