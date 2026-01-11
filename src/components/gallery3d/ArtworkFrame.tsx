@@ -29,51 +29,130 @@ const ArtworkFrame = ({ position, rotation, title, image, isInfoPanel }: Artwork
       <group ref={groupRef} position={position} rotation={rotation}>
         {/* Info panel background */}
         <mesh position={[0, 0, 0.05]}>
-          <planeGeometry args={[8, 5]} />
+          <planeGeometry args={[10, 7]} />
           <meshStandardMaterial color="#d8d8d8" roughness={0.9} />
         </mesh>
         
-        {/* Title */}
+        {/* Name */}
         <Text
-          position={[0, 1.5, 0.1]}
-          fontSize={0.6}
+          position={[0, 2.5, 0.1]}
+          fontSize={0.55}
           color="#000000"
           anchorX="center"
           anchorY="middle"
+          font="/fonts/Inter-Bold.woff"
         >
-          TheVertMenthe
+          Thushan Ekanayaka
         </Text>
         
-        {/* Subtitle */}
+        {/* Roles */}
         <Text
-          position={[0, 0.8, 0.1]}
-          fontSize={0.2}
-          color="#666666"
+          position={[0, 1.8, 0.1]}
+          fontSize={0.18}
+          color="#555555"
           anchorX="center"
           anchorY="middle"
-          letterSpacing={0.3}
+          letterSpacing={0.15}
         >
-          d r a w i n g s
-        </Text>
-        
-        {/* Description */}
-        <Text
-          position={[0, -0.3, 0.1]}
-          fontSize={0.12}
-          color="#444444"
-          anchorX="center"
-          anchorY="middle"
-          maxWidth={6}
-          textAlign="center"
-          lineHeight={1.5}
-        >
-          {`An artist whose work embraces simplicity and subtle emotion through the humble ballpoint pen. Using ink as both medium and metaphor, the drawings explore quiet moments, fleeting thoughts, and the poetry of everyday life.`}
+          Software Engineer • Photography • Creative Design
         </Text>
         
         {/* Decorative line */}
-        <mesh position={[0, -1.5, 0.1]}>
-          <planeGeometry args={[4, 0.01]} />
-          <meshStandardMaterial color="#000000" />
+        <mesh position={[0, 1.3, 0.1]}>
+          <planeGeometry args={[6, 0.008]} />
+          <meshStandardMaterial color="#333333" />
+        </mesh>
+        
+        {/* Education Section */}
+        <Text
+          position={[0, 0.8, 0.1]}
+          fontSize={0.14}
+          color="#333333"
+          anchorX="center"
+          anchorY="middle"
+          letterSpacing={0.05}
+        >
+          EDUCATION
+        </Text>
+        
+        <Text
+          position={[0, 0.35, 0.1]}
+          fontSize={0.13}
+          color="#444444"
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={8}
+          textAlign="center"
+          lineHeight={1.4}
+        >
+          Bachelor of Information and Communication Tech. Honors
+        </Text>
+        
+        <Text
+          position={[0, 0.0, 0.1]}
+          fontSize={0.11}
+          color="#555555"
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={8}
+          textAlign="center"
+        >
+          (Specialized in Software)
+        </Text>
+        
+        <Text
+          position={[0, -0.4, 0.1]}
+          fontSize={0.11}
+          color="#666666"
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={8}
+          textAlign="center"
+          lineHeight={1.3}
+        >
+          Faculty of Technology, University of Sri Jayewardenepura
+        </Text>
+        
+        {/* Work Experience Section */}
+        <Text
+          position={[0, -1.0, 0.1]}
+          fontSize={0.14}
+          color="#333333"
+          anchorX="center"
+          anchorY="middle"
+          letterSpacing={0.05}
+        >
+          WORK EXPERIENCE
+        </Text>
+        
+        <Text
+          position={[0, -1.4, 0.1]}
+          fontSize={0.13}
+          color="#444444"
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={8}
+          textAlign="center"
+        >
+          Software Engineer
+        </Text>
+        
+        <Text
+          position={[0, -1.75, 0.1]}
+          fontSize={0.11}
+          color="#666666"
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={8}
+          textAlign="center"
+        >
+          Payshia Software Solutions (Pvt) Ltd
+        </Text>
+        
+        {/* Bottom decorative line */}
+        <mesh position={[0, -2.5, 0.1]}>
+          <planeGeometry args={[5, 0.008]} />
+          <meshStandardMaterial color="#333333" />
         </mesh>
       </group>
     );
