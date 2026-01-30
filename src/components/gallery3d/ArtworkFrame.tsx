@@ -2,6 +2,7 @@ import { useRef, useState, useMemo } from 'react';
 import { useLoader } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
+import profileImage from '@/assets/thushan-profile.jpg';
 
 interface ArtworkFrameProps {
   position: [number, number, number];
@@ -24,19 +25,38 @@ const ArtworkFrame = ({ position, rotation, title, image, isInfoPanel }: Artwork
     return tex;
   }, [image, isInfoPanel]);
 
+  // Load profile image texture
+  const profileTexture = useMemo(() => {
+    if (!isInfoPanel) return null;
+    const loader = new THREE.TextureLoader();
+    const tex = loader.load(profileImage);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, [isInfoPanel]);
+
   if (isInfoPanel) {
     return (
       <group ref={groupRef} position={position} rotation={rotation}>
         {/* Info panel background */}
         <mesh position={[0, 0, 0.05]}>
-          <planeGeometry args={[8, 5]} />
+          <planeGeometry args={[10, 6]} />
           <meshStandardMaterial color="#d8d8d8" roughness={0.9} />
+        </mesh>
+        
+        {/* Profile Image */}
+        <mesh position={[-3, 0.3, 0.1]}>
+          <planeGeometry args={[2.5, 3.2]} />
+          {profileTexture ? (
+            <meshStandardMaterial map={profileTexture} roughness={0.5} />
+          ) : (
+            <meshStandardMaterial color="#cccccc" roughness={0.5} />
+          )}
         </mesh>
         
         {/* Title */}
         <Text
-          position={[0, 1.5, 0.1]}
-          fontSize={0.5}
+          position={[1.5, 1.8, 0.1]}
+          fontSize={0.45}
           color="#000000"
           anchorX="center"
           anchorY="middle"
@@ -46,24 +66,24 @@ const ArtworkFrame = ({ position, rotation, title, image, isInfoPanel }: Artwork
         
         {/* Subtitle */}
         <Text
-          position={[0, 0.8, 0.1]}
-          fontSize={0.18}
+          position={[1.5, 1.1, 0.1]}
+          fontSize={0.16}
           color="#666666"
           anchorX="center"
           anchorY="middle"
-          letterSpacing={0.2}
+          letterSpacing={0.15}
         >
           Software Engineer & Photographer
         </Text>
         
         {/* Description */}
         <Text
-          position={[0, -0.3, 0.1]}
-          fontSize={0.12}
+          position={[1.5, -0.2, 0.1]}
+          fontSize={0.11}
           color="#444444"
           anchorX="center"
           anchorY="middle"
-          maxWidth={6}
+          maxWidth={4.5}
           textAlign="center"
           lineHeight={1.5}
         >
@@ -71,7 +91,7 @@ const ArtworkFrame = ({ position, rotation, title, image, isInfoPanel }: Artwork
         </Text>
         
         {/* Decorative line */}
-        <mesh position={[0, -1.5, 0.1]}>
+        <mesh position={[1.5, -1.8, 0.1]}>
           <planeGeometry args={[4, 0.01]} />
           <meshStandardMaterial color="#000000" />
         </mesh>
